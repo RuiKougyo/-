@@ -1,0 +1,15 @@
+# 利用者ごとの設定（APIキー・ウェブフックURLを含むため絶対に公開しない）
+config.yaml
+
+# 実行時に作られるデータ・ログ
+data/
+logs/
+
+# ビルド関連
+build/
+dist/
+release/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
