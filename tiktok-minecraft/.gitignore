@@ -1,0 +1,14 @@
+# 利用者ごとの設定（RCONのパスワードを含むため公開しない）
+config.yaml
+
+# 実行時に作られるログ
+logs/
+
+# ビルド関連
+build/
+dist/
+release/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/

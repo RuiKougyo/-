@@ -1,0 +1,198 @@
+# ============================================================
+#  TikTok × Minecraft ギミック連動ツール 設定ファイル
+#  このファイルを「config.yaml」という名前にして使います。
+#  メモ帳で編集できます（保存するときは文字コード「UTF-8」）。
+#
+#  ⚠ 書くときの注意
+#   - 先頭の空白（字下げ）の数をそろえてください。タブは使えません
+#   - 「:」の後ろには半角スペースを1つ入れてください
+#   - コマンドは '…' （半角のシングルクォート）で囲むと安全です
+# ============================================================
+
+# ---------- TikTok ----------
+tiktok:
+  # 配信するTikTokアカウントのID（プロフィールの @ の後ろの部分）
+  username: "your_tiktok_id"
+  # 配信していないとき、何秒ごとに「配信が始まったか」を確認するか（10以上）
+  check_interval_seconds: 60
+  # （任意）Euler Stream の APIキー。接続の回数制限にかかるときだけ設定
+  sign_api_key: ""
+
+# ---------- Minecraft（Java版サーバー） ----------
+minecraft:
+  host: "127.0.0.1"        # 同じパソコンでサーバーを動かすならこのまま
+  port: 25575              # server.properties の rcon.port と同じ数字
+  password: "ここにRCONのパスワード"   # server.properties の rcon.password と同じもの
+  # あなたのMinecraftのプレイヤー名。コマンド内の {player} がこれに置き換わります
+  player: "Steve"
+  # 1秒あたりに送るコマンドの最大数（サーバーが重いときは小さく）
+  commands_per_second: 10
+  # 順番待ちできるコマンドの最大数（これを超えた分は捨てます）
+  max_queue: 1000
+  # 1回のギフトでコマンドを繰り返す最大回数（バラ999個などで暴走しないように）
+  max_repeat: 50
+
+# ギフトを連打されたときの動き方
+#   immediate  … 1個届くごとにすぐ動かす（おすすめ）
+#   streak_end … 連打が終わってから、まとめて個数分動かす
+gift_mode: immediate
+
+# ログの細かさ（INFO / DEBUG）
+log_level: INFO
+
+# ============================================================
+#  コマンドの中で使える「差し込み文字」
+#   {player}      … 上で設定したMinecraftのプレイヤー名
+#   {nickname}    … ギフト等を送った人の表示名
+#   {username}    … 送った人のTikTok ID
+#   {gift}        … ギフトの名前
+#   {count}       … ギフトの個数
+#   {coins}       … ギフト1個のコイン数
+#   {total_coins} … コイン数 × 個数
+#   {n}           … 繰り返しの何回目か（1, 2, 3…）
+#   {comment}     … コメントの内容
+#   {likes}       … いいねの合計数
+#
+#  召喚したモブには {Tags:["tiktok"]} を付けておくと、下の timers の
+#  「お掃除」でまとめて消せます（放置配信でサーバーが重くなるのを防ぎます）
+#
+#  特別なコマンド
+#   wait 秒数     … 次のコマンドまで待つ（例: wait 1.5）。最大60秒
+#                    ※ 待っている間、ほかのギフトのコマンドも止まります
+# ============================================================
+
+# どのギフトでも、最初に1回だけ実行するコマンド（お礼の表示など）
+gift_announce:
+  - 'title @a actionbar {"text":"★ {nickname} さん {gift}×{count} ありがとう！","color":"gold"}'
+
+# ---------- ギフトごとのギミック ----------
+#  上から順に確認し、最初に当てはまったものだけ動きます。
+#  gift: にはギフトの名前（英語）かギフトIDを書きます。
+#  名前が分からないときは、一度ギフトをもらうとログに
+#  「設定にないギフトです: 名前「○○」 ID ○○」と表示されるので、それを書いてください。
+#
+#  repeat: true  … 個数ぶん繰り返す（バラ5個 → 5回）
+#  times: 2      … 1個あたりの回数（バラ5個 × 2 → 10回）
+#  min_coins / max_coins … コイン数の範囲で決める（名前を書かなかったギフト用）
+gifts:
+  - name: "バラ → ゾンビ召喚"
+    gift: ["Rose"]
+    repeat: true
+    commands:
+      - 'execute at {player} run summon zombie ~ ~ ~3 {Tags:["tiktok"]}'
+
+  - name: "TikTok → ダイヤを1個プレゼント"
+    gift: ["TikTok"]
+    commands:
+      - 'give {player} diamond 1'
+
+  - name: "フィンガーハート → 回復"
+    gift: ["Finger Heart"]
+    repeat: false
+    commands:
+      - 'effect give {player} instant_health 1 1'
+      - 'execute at {player} run particle heart ~ ~2 ~ 1 1 1 0 20'
+
+  - name: "ドーナツ → クリーパー"
+    gift: ["Doughnut"]
+    commands:
+      - 'execute at {player} run summon creeper ~3 ~ ~3 {Tags:["tiktok"]}'
+
+  # ---- 名前を書かなかったギフトは、コイン数で決める ----
+  - name: "10〜99コイン → TNTの雨"
+    min_coins: 10
+    max_coins: 99
+    times: 3
+    commands:
+      - 'execute at {player} run summon tnt ~ ~8 ~ {fuse:60}'
+
+  - name: "100〜499コイン → 雷とスケルトン軍団"
+    min_coins: 100
+    max_coins: 499
+    repeat: false
+    commands:
+      - 'title @a title {"text":"⚡ {nickname} さんの雷 ⚡","color":"yellow"}'
+      - 'execute at {player} run summon lightning_bolt ~2 ~ ~2'
+      - 'wait 1'
+      - 'execute at {player} run summon skeleton ~4 ~ ~ {Tags:["tiktok"]}'
+      - 'execute at {player} run summon skeleton ~-4 ~ ~ {Tags:["tiktok"]}'
+      - 'execute at {player} run summon skeleton ~ ~ ~4 {Tags:["tiktok"]}'
+
+  - name: "500コイン以上 → ボス襲来"
+    min_coins: 500
+    repeat: false
+    commands:
+      - 'title @a title {"text":"☠ ボス襲来 ☠","color":"dark_red"}'
+      - 'title @a subtitle {"text":"by {nickname}","color":"red"}'
+      - 'playsound minecraft:entity.wither.spawn master @a'
+      - 'wait 2'
+      - 'execute at {player} run summon ravager ~6 ~ ~ {Tags:["tiktok"]}'
+
+# どのルールにも当てはまらなかったギフト（1〜9コインの名前なしギフトなど）
+unknown_gift:
+  repeat: true
+  commands:
+    - 'execute at {player} run summon chicken ~ ~3 ~ {Tags:["tiktok"]}'
+
+# ---------- ギフト以外のギミック ----------
+# 使わないものは enabled: false にするか、まるごと消してください。
+#   cooldown_seconds        … 同じ人が続けて発動できない秒数
+#   global_cooldown_seconds … だれであっても続けて発動できない秒数
+
+follow:
+  once_per_user: true      # 同じ人のフォローは配信ごとに1回だけ
+  commands:
+    - 'tellraw @a {"text":"+ {nickname} さんがフォローしてくれました！","color":"aqua"}'
+    - 'execute at {player} run particle happy_villager ~ ~1 ~ 1 1 1 0 40'
+    - 'playsound minecraft:entity.player.levelup master @a'
+
+share:
+  cooldown_seconds: 60
+  commands:
+    - 'tellraw @a {"text":"» {nickname} さんがシェアしてくれました！","color":"green"}'
+    - 'give {player} golden_apple 1'
+
+likes:
+  every: 100               # いいね合計100ごとに発動
+  commands:
+    - 'tellraw @a {"text":"♥ いいね {likes} 突破！","color":"light_purple"}'
+    - 'execute at {player} run summon slime ~ ~3 ~ {Size:0,Tags:["tiktok"]}'
+
+join:
+  enabled: false           # 入室ごとに動かすと多すぎるので、最初は無効
+  global_cooldown_seconds: 30
+  commands:
+    - 'tellraw @a {"text":"{nickname} さん いらっしゃい","color":"gray"}'
+
+subscribe:
+  commands:
+    - 'title @a title {"text":"★ {nickname} さん サブスクありがとう！","color":"gold"}'
+    - 'give {player} netherite_ingot 1'
+
+# コメントの言葉で動くギミック（上から順に確認）
+comments:
+  - name: "ジャンプ"
+    keywords: ["ジャンプ", "jump"]
+    cooldown_seconds: 30
+    commands:
+      - 'effect give {player} jump_boost 10 4'
+
+  - name: "夜にする"
+    keywords: ["夜にして"]
+    global_cooldown_seconds: 300
+    commands:
+      - 'time set night'
+      - 'tellraw @a {"text":"☾ {nickname} さんが夜にしました","color":"dark_aqua"}'
+
+# 配信中、一定時間ごとに自動で実行するコマンド（放置配信の盛り上げ用）
+timers:
+  - name: "ギミック案内"
+    every_minutes: 10
+    commands:
+      - 'tellraw @a {"text":"★ ギフトでギミック発動！ バラ=ゾンビ / TikTok=ダイヤ / 100コイン以上=雷","color":"yellow"}'
+
+  - name: "お掃除（召喚したモブを消す）"
+    every_minutes: 15
+    commands:
+      - 'kill @e[tag=tiktok]'
+      - 'tellraw @a {"text":"お掃除しました（召喚モブをリセット）","color":"gray"}'
