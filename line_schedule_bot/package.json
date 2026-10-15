@@ -1,0 +1,8 @@
+{
+  "name": "line-schedule-bot",
+  "private": true,
+  "description": "LINEで予定を登録・確認・リマインドできるbot（Google Apps Script）",
+  "scripts": {
+    "test": "TZ=Asia/Tokyo node --test tests/bot.test.js"
+  }
+}
